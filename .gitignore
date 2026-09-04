@@ -1,0 +1,19 @@
+# Sensitive Environment Variables
+.env
+
+# Compiled executables
+# If you name your build output, add it here too
+main
+*.exe
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+vendor/
