@@ -1,18 +1,22 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
-	"errors"
+	"auth-go/internal/models"
+	"auth-go/internal/security"
+	"auth-go/internal/service"
 	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
 	"strconv"
 	"strings"
-	"auth-go/internal/service"
-	"auth-go/internal/security"
-	"auth-go/internal/models"
-
 )
 
+type securityConfig	struct{
+	authSecret string
+}
+
+var digit = 12
 // hasValidMethod ensures the incoming request matches the expected HTTP method.
 func hasValidMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 	if r.Method != method {
