@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type securityConfig	struct{
+type HaloSecurity	struct{
 	authSecret string
 }
 
