@@ -1,9 +1,8 @@
-
 package service
 
 import (
-	"context"
 	"auth-go/internal/models"
+	"context"
 )
 
 // 💡 1. Local Repository Contract (Owned by the service layer)
@@ -26,10 +25,4 @@ type AuthService interface {
 	RegisterUser(ctx context.Context, email, password string) error
 	LoginUser(ctx context.Context, email, password string) (*models.User, error)
 	ResetPassword(ctx context.Context, email, newPassword string) error
-}
-
-
-// 💡 4. The Single Constructor
-func NewAuthService(repo AuthRepository) AuthService {
-	return &authService{repo: repo}
 }

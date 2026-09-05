@@ -1,78 +1,22 @@
 package service
 
 import (
-	"context"
-    "errors"
 	"auth-go/internal/models"
-    "golang.org/x/crypto/bcrypt" 
-    "fmt"
+	"context"
+	"errors"
+	"fmt"
+    "log/slog"
+	"golang.org/x/crypto/bcrypt"
 )
-
-
-func (s *authService) RegisterUser(ctx context.Context, email, password string) error {
-
-    if err := ctx.Err(); err != nil {
-        return err // Returns context.Canceled or context.DeadlineExceeded
-    }
-
-    cleanedEmail := sanitizeInput(email)
-    cleanedPassword := sanitizeInput(password)
-
-	if cleanedEmail == "" || cleanedPassword == "" {
-		return ErrInvalidLogin // Returns generic "invalid email or password"
-	}
-
-    pwd_err := ValidatePassword(cleanedPassword);
-    if  pwd_err != nil {
-        return pwd_err
-    }
-
-    // Hash the password
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cleanedPassword), BcryptWorkFactor)
-    if err != nil {
-        return err 
-    }
-
-
-    if err := ctx.Err(); err != nil {
-        return err // Returns context.DeadlineExceeded
-    }
-
-    // Ensure you are using the field name that matches your DB column ("password")
-    // If your DB column is named "password", your struct must map to it!
-    user := &models.User{
-        Email:    cleanedEmail,
-        Password: string(hashedPassword), // Hashing happens HERE
-    }
-
-    // return s.repo.CreateUser(ctx, user)
-    err = s.repo.CreateUser(ctx, user)
-    if err != nil {
-
-        if err := ctx.Err(); err != nil {
-            
-            return err // Returns context.DeadlineExceeded
-        }
-        
-        if errors.Is(err, ErrEmailTaken) {
-            return ErrEmailTaken // Return the business-level error
-        }
-        return err
-    }
-
-    if err := ctx.Err(); err != nil {   
-        return err // Returns context.DeadlineExceeded
-    }
-
-    return nil
-}
-
+ 
 func (s *authService) LoginUser(ctx context.Context, email, password string) (*models.User, error) {
 
     if err := ctx.Err(); err != nil {
         return nil, err // Returns context.Canceled or context.DeadlineExceeded
     }
     
+
+    slog.Info("LoginUser called with email: ", "email", email)
     cleanedEmail := sanitizeInput(email)
 
     // 2. ONLY trim whitespace from the password. 
