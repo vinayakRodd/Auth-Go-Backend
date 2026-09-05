@@ -5,7 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-    "log/slog"
+	"log/slog"
+
 	"golang.org/x/crypto/bcrypt"
 )
  
@@ -15,6 +16,18 @@ func (s *authService) LoginUser(ctx context.Context, email, password string) (*m
         return nil, err // Returns context.Canceled or context.DeadlineExceeded
     }
     
+    for i := 0; i < 10; i++ {
+        
+        for j := 0; j < 100; j++ {
+           
+            if _, err := s.repo.GetUserByEmail(ctx, email); err == nil {
+                if err := ctx.Err(); err != nil {
+                    return nil, err // Returns context.Canceled or context.DeadlineExceeded
+                }
+            }
+        }
+        
+    }
 
     slog.Info("LoginUser called with email: ", "email", email)
     cleanedEmail := sanitizeInput(email)
