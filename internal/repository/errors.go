@@ -6,5 +6,4 @@ import "errors"
 var (
     ErrEmailAlreadyExists = errors.New("email already exists")
     ErrNotFound           = errors.New("record not found")
-	ErrInvalidInput       = errors.New("invalid input provided")
 )

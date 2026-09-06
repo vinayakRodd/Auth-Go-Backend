@@ -16,20 +16,31 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.CheckActiveSession(ctx, w, r) {
-		return 
+		return
 	}
-	
+
 	var req models.LoginRequest
 	if !decodeJSON(w, r, &req) {
+		return
+	}
+
+	// 0. Brute-force gate: reject before touching the DB if this account has
+	// already hit maxFailedLoginAttempts within the current lockout window.
+	if locked, _ := h.isLoginLocked(ctx, req.Email); locked {
+		respondWithJSON(w, http.StatusTooManyRequests, map[string]string{"error": AccountLockedError.Error()})
 		return
 	}
 
 	// 1. DB Verification Gate
 	user, err := h.service.LoginUser(ctx, req.Email, req.Password)
 	if err != nil {
-		handleError(w, err) 
+		h.recordFailedLogin(ctx, req.Email)
+		handleError(w, err)
 		return
 	}
+
+	// A successful login clears any failed-attempt history for this account.
+	h.clearFailedLogins(ctx, user.Email)
 
 	// 2. 🚀 REUSABLE SESSION GENERATION CALL
 	if err := h.issueSession(ctx, w, user.Email); err != nil {

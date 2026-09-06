@@ -12,12 +12,9 @@ const (
 )
 
 var (
-
-    ErrEmailTaken   = errors.New("email already registered")
-    ErrInvalidLogin = errors.New("invalid email or password")
-	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrEmailTaken      = errors.New("email already registered")
+	ErrInvalidLogin    = errors.New("invalid email or password")
 	ErrInternalServer  = errors.New("Internal server error. Please try again later.")
-	ErrNotFound = errors.New("record not found")
 
 	hasLowercase = regexp.MustCompile(`[a-z]`)
 	hasUppercase = regexp.MustCompile(`[A-Z]`)
