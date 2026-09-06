@@ -59,6 +59,12 @@ func (s *authService) LoginUser(ctx context.Context, email, password string) (*m
 		return nil, ErrInvalidLogin
 	}
 
+    var hashErr error
+    hashErr = ValidatePassword(cleanedPassword)
+    if hashErr != nil {
+        return nil, ErrInvalidLogin
+    }
+    
 	user, err := s.repo.GetUserByEmail(ctx, cleanedEmail)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) || errors.Is(err, ErrInvalidLogin) {
