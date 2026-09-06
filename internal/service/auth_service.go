@@ -10,14 +10,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	ErrInvalidLogin    = errors.New("invalid email or password")
+	ErrEmailTaken      = errors.New("email already taken")
+	BcryptWorkFactor   = 12
+)
+
 func (s *authService) RegisterUser(ctx context.Context, email, password string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
 	cleanedEmail := sanitizeInput(email)
+	// Issue 1: Passwords should not be sanitized (corrupts special chars)
 	cleanedPassword := sanitizeInput(password)
 
+	// Issue 2: Misleading error return on registration
 	if cleanedEmail == "" || cleanedPassword == "" {
 		return ErrInvalidLogin
 	}
@@ -52,18 +60,20 @@ func (s *authService) LoginUser(ctx context.Context, email, password string) (*m
 		return nil, err
 	}
 
-    cleanedEmail := sanitizeInput(email)
+	cleanedEmail := sanitizeInput(email)
 	cleanedPassword := sanitizeInput(password)
 
 	if cleanedEmail == "" || cleanedPassword == "" {
 		return nil, ErrInvalidLogin
 	}
 
-    hashErr := ValidatePassword(cleanedPassword)
-    if hashErr != nil {
-        return nil, ErrInvalidLogin
-    }
+	// Issue 3: Validating password complexity on login (risks locking out users if policy changes)
+	hashErr := ValidatePassword(cleanedPassword)
+	if hashErr != nil {
+		return nil, ErrInvalidLogin
+	}
 
+	// Issue 4: Timing attack vulnerability (non-constant time email lookup vs bcrypt duration)
 	user, err := s.repo.GetUserByEmail(ctx, cleanedEmail)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) || errors.Is(err, ErrInvalidLogin) {
@@ -77,9 +87,11 @@ func (s *authService) LoginUser(ctx context.Context, email, password string) (*m
 		return nil, ErrInvalidLogin
 	}
 
+	// Issue 5: Returning user model directly leaks hashed password in memory / JSON responses
 	return user, nil
 }
 
+// Issue 6: Unauthenticated password reset (account takeover - missing reset token/OTP verification)
 func (s *authService) ResetPassword(ctx context.Context, email, newPassword string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -96,6 +108,7 @@ func (s *authService) ResetPassword(ctx context.Context, email, newPassword stri
 		return err
 	}
 
+	// Issue 7: Redundant DB query creating a TOCTOU race condition
 	exists, err := s.repo.EmailExists(ctx, cleanedEmail)
 	if err != nil {
 		return err
