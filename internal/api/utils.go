@@ -12,11 +12,6 @@ import (
 	"strings"
 )
 
-type HaloSecurity	struct{
-	authSecret string
-}
-
-var digit = 12
 // hasValidMethod ensures the incoming request matches the expected HTTP method.
 func hasValidMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 	if r.Method != method {
@@ -85,15 +80,7 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusInternalServerError, err.Error()
 	}
 
-	
 	return http.StatusBadRequest, err.Error()
-}
-
-
-// GetSecurityConfig extracts the configuration directly from the handler's service layer.
-func (h *AuthHandler) GetSecurityConfig() (SecurityConfig, bool) {
-	cfg, ok := h.service.(SecurityConfig)
-	return cfg, ok
 }
 
 

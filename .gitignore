@@ -1,10 +1,11 @@
 # Sensitive Environment Variables
 .env
 
-# Compiled executables
-# If you name your build output, add it here too
+# Compiled executables and temporary build files
 main
 *.exe
+tmp/
+*.log
 
 # IDE and Editor files
 .vscode/
