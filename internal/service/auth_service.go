@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -53,8 +52,7 @@ func (s *authService) LoginUser(ctx context.Context, email, password string) (*m
 		return nil, err
 	}
 
-	slog.Info("LoginUser called", "email", email)
-	cleanedEmail := sanitizeInput(email)
+    cleanedEmail := sanitizeInput(email)
 	cleanedPassword := sanitizeInput(password)
 
 	if cleanedEmail == "" || cleanedPassword == "" {
