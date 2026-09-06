@@ -10,12 +10,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	ErrInvalidLogin    = errors.New("invalid email or password")
-	ErrEmailTaken      = errors.New("email already taken")
-	BcryptWorkFactor   = 12
-)
-
 func (s *authService) RegisterUser(ctx context.Context, email, password string) error {
 	if err := ctx.Err(); err != nil {
 		return err
