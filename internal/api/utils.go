@@ -1,14 +1,15 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
-	"errors"
-	"context"
-	"auth-go/internal/service" 
-	"auth-go/internal/security"
 	"auth-go/internal/models"
-
+	"auth-go/internal/security"
+	"auth-go/internal/service"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 // hasValidMethod ensures the incoming request matches the expected HTTP method.
@@ -79,15 +80,7 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusInternalServerError, err.Error()
 	}
 
-	
 	return http.StatusBadRequest, err.Error()
-}
-
-
-// GetSecurityConfig extracts the configuration directly from the handler's service layer.
-func (h *AuthHandler) GetSecurityConfig() (SecurityConfig, bool) {
-	cfg, ok := h.service.(SecurityConfig)
-	return cfg, ok
 }
 
 
@@ -182,6 +175,47 @@ func (h *AuthHandler) destroySessionFootprints(ctx context.Context, w http.Respo
 	
 	security.ClearAccessTokenCookie(w)
 	security.ClearRefreshTokenCookie(w)
+}
+
+// normalizeEmailKey canonicalizes an email for use as a Redis key namespace,
+// independent of the service layer's own input sanitization.
+func normalizeEmailKey(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+// isLoginLocked reports whether email has hit maxFailedLoginAttempts within
+// the current loginLockoutWindow. A missing or unparseable counter is
+// treated as "not locked" (fail-open), consistent with how the rest of this
+// package treats a Redis cache-miss as "no record found".
+func (h *AuthHandler) isLoginLocked(ctx context.Context, email string) (bool, error) {
+	raw, err := h.cache.Get(ctx, "loginattempts:"+normalizeEmailKey(email))
+	if err != nil {
+		return false, nil
+	}
+	count, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return false, nil
+	}
+	return count >= maxFailedLoginAttempts, nil
+}
+
+// recordFailedLogin increments the failed-attempt counter for email,
+// starting (and TTL-ing) a fresh lockout window on the first failure.
+func (h *AuthHandler) recordFailedLogin(ctx context.Context, email string) {
+	key := "loginattempts:" + normalizeEmailKey(email)
+	count, err := h.cache.Incr(ctx, key)
+	if err != nil {
+		return
+	}
+	if count == 1 {
+		_ = h.cache.Expire(ctx, key, loginLockoutWindow)
+	}
+}
+
+// clearFailedLogins resets email's failed-attempt counter, e.g. after a
+// successful login.
+func (h *AuthHandler) clearFailedLogins(ctx context.Context, email string) {
+	_ = h.cache.Delete(ctx, "loginattempts:"+normalizeEmailKey(email))
 }
 
 func (h *AuthHandler) respondWithEnvelope(w http.ResponseWriter, statusCode int, message string, email string) {
